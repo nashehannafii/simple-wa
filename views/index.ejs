@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Web QR</title>
+</head>
+<body>
+    <h1>Scan the QR Code with WhatsApp</h1>
+    <div id="qr-container"></div>
+
+    <!-- Menambahkan Socket.io client -->
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script>
+        const socket = io('http://localhost:3000');  // Koneksi ke server socket.io
+
+        socket.on('qr', (qr) => {
+            const qrContainer = document.getElementById('qr-container');
+            qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qr)}&size=200x200" alt="QR Code"/>`;
+        });
+    </script>
+</body>
+</html>

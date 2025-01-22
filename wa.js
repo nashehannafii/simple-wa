@@ -1,37 +1,47 @@
 const express = require('express');  
 const { Client, LocalAuth } = require('whatsapp-web.js');  
-const qrcode = require('qrcode-terminal');  
-  
+const http = require('http');  
+const socketIo = require('socket.io');  
+const path = require('path');  // Untuk mengatur path ke views
+
 const app = express();  
-app.use(express.json()); // Middleware untuk parsing JSON  
-  
+const server = http.createServer(app);  
+const io = socketIo(server);  // Setup socket.io
+
+// Set EJS sebagai templating engine
+app.set('view engine', 'ejs');  
+app.set('views', path.join(__dirname, 'views'));  // Folder untuk views
+
+app.use(express.json());  // Middleware untuk parsing JSON  
+
 let client;  
-  
+
 function initializeClient() {  
     client = new Client({  
         authStrategy: new LocalAuth()  
     });  
-  
+
     client.on('qr', (qr) => {  
-        // Tampilkan QR code di terminal  
-        qrcode.generate(qr, { small: true });  
+        // Emit QR code ke frontend via socket.io
+        io.emit('qr', qr);  
     });  
-  
+
     client.on('ready', () => {  
         console.log('Client is ready!');  
     });  
-  
+
     client.on('auth_failure', () => {  
         console.log('Authentication failed, reinitializing client...');  
-        initializeClient(); // Inisialisasi ulang client  
+        client.destroy(); // Menghancurkan sesi yang ada  
+        initializeClient();  // Inisialisasi ulang client  
     });  
-  
+
     client.initialize();  
 }  
-  
+
 // Inisialisasi client pertama kali  
 initializeClient();  
-  
+
 app.post('/send-message', (req, res) => {  
     let { number, message } = req.body;  
     number = `${number}@s.whatsapp.net`;
@@ -41,7 +51,13 @@ app.post('/send-message', (req, res) => {
         res.status(500).send('Error sending message: ' + err);  
     });  
 });  
-  
-app.listen(3000, () => {  
+
+// Endpoint untuk menampilkan QR code
+app.get('/', (req, res) => {
+    res.render('index'); // Render view EJS
+});
+
+// Set server untuk menjalankan aplikasi
+server.listen(3000, () => {  
     console.log('Server is running on http://localhost:3000');  
 });  
